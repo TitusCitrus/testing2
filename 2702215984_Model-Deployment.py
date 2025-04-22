@@ -8,20 +8,19 @@ from sklearn.ensemble import RandomForestClassifier
 class ModelInference:
     def __init__(self, model_path):
         # Load the model
-        self.model = joblib.load(model_path)
-        # Ensure that the model has the 'predict' method for predictions
+        self.model = joblib.load(model_path)  # Loading the model
         if not hasattr(self.model, 'predict'):
-            raise ValueError("The loaded object does not have a valid 'predict' method.")
+            raise ValueError("The loaded object is not a valid model with a 'predict' method.")
         
     def predict(self, input_data):
         # Ensure the input data is in a DataFrame format
         if isinstance(input_data, dict):
             input_data = pd.DataFrame([input_data])  # Convert dict to DataFrame
         
-        # Handle missing values by filling them with zeros
+        # Handle missing values by filling them with zeros (or use mean/median)
         if input_data.isnull().values.any():
             st.warning("Input data contains missing values. Filling with zeros.")
-            input_data = input_data.fillna(0)
+            input_data = input_data.fillna(0)  # Or use .fillna(input_data.mean()) if needed
         
         # Ensure correct data types (all features must be numeric)
         for col in input_data.columns:
@@ -29,12 +28,8 @@ class ModelInference:
                 raise ValueError(f"Feature {col} has invalid data type. Expected numeric data.")
         
         # Make prediction with the model
-        try:
-            prediction = self.model.predict(input_data)
-            return prediction
-        except Exception as e:
-            st.error(f"An error occurred during prediction: {e}")
-            return None
+        prediction = self.model.predict(input_data)
+        return prediction
 
 # Load the trained model with ModelInference
 model_inference = ModelInference("rf_model.pkl")
@@ -89,9 +84,8 @@ def main():
         # Make prediction using the ModelInference class
         try:
             prediction = model_inference.predict(features)
-            if prediction is not None:
-                # Display result
-                st.success(f"Prediction: {'Canceled' if prediction[0] == 1 else 'Not Canceled'}")
+            # Display result
+            st.success(f"Prediction: {'Canceled' if prediction[0] == 1 else 'Not Canceled'}")
         except ValueError as e:
             st.error(f"Error: {e}")
         except Exception as ex:
