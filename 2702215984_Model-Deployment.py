@@ -7,39 +7,50 @@ from sklearn.ensemble import RandomForestClassifier
 # Define the ModelInference class
 class ModelInference:
     def __init__(self, model_path):
-        # Load the model
-        self.model = joblib.load(model_path)  # Loading the model
-        
-        # Check the model type to ensure it's a RandomForestClassifier
-        if not isinstance(self.model, RandomForestClassifier):
-            raise ValueError("The loaded object is not a RandomForestClassifier.")
-        
+        self.model_path = model_path
+    
+    def load_model(self):
+        try:
+            st.write(f"Loading model from: {self.model_path}")
+            model = joblib.load(self.model_path)
+            if not hasattr(model, 'predict'):
+                raise ValueError("The loaded object is not a valid model with a 'predict' method.")
+            return model
+        except Exception as e:
+            st.error(f"Error loading model: {e}")
+            raise e
+
     def predict(self, input_data):
+        model = self.load_model()  # Force reloading model each time
+
         # Ensure the input data is in a DataFrame format
         if isinstance(input_data, dict):
             input_data = pd.DataFrame([input_data])  # Convert dict to DataFrame
-        
-        # Handle missing values by filling them with zeros (or use mean/median)
+
+        # Handle missing values by filling them with zeros
         if input_data.isnull().values.any():
             st.warning("Input data contains missing values. Filling with zeros.")
-            input_data = input_data.fillna(0)  # Or use .fillna(input_data.mean()) if needed
-        
-        # Ensure correct data types (all features must be numeric)
+            input_data = input_data.fillna(0)
+
+        # Ensure correct data types
         for col in input_data.columns:
             if not pd.api.types.is_numeric_dtype(input_data[col]):
                 raise ValueError(f"Feature {col} has invalid data type. Expected numeric data.")
-        
-        # Make prediction with the model
-        prediction = self.model.predict(input_data)
+
+        # Debug output
+        st.write("Input to model:", input_data)
+
+        # Make prediction
+        prediction = model.predict(input_data)
         return prediction
 
-# Load the trained model with ModelInference
+# Initialize model inference with path
 model_inference = ModelInference("rf_model.pkl")
 
 def main():
     st.title("Hotel Booking Cancellation Prediction")
 
-    # Input fields from the user
+    # Input fields
     no_of_adults = st.number_input("Number of Adults", min_value=0, value=2)
     no_of_children = st.number_input("Number of Children", min_value=0, value=0)
     no_of_guests = st.number_input("Total Guests", min_value=1, value=2)
@@ -61,7 +72,6 @@ def main():
 
     # Prediction button
     if st.button("Predict Cancellation"):
-        # Prepare input data as a dictionary
         features = {
             "no_of_adults": no_of_adults,
             "no_of_children": no_of_children,
@@ -83,10 +93,8 @@ def main():
             "no_of_special_requests": no_of_special_requests,
         }
 
-        # Make prediction using the ModelInference class
         try:
             prediction = model_inference.predict(features)
-            # Display result
             st.success(f"Prediction: {'Canceled' if prediction[0] == 1 else 'Not Canceled'}")
         except ValueError as e:
             st.error(f"Error: {e}")
