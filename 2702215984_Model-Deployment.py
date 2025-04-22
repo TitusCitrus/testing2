@@ -5,44 +5,34 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 
 # Define the ModelInference class
+# Define the ModelInference class
 class ModelInference:
     def __init__(self, model_path):
-        self.model_path = model_path
-    
-    def load_model(self):
-        try:
-            st.write(f"Loading model from: {self.model_path}")
-            model = joblib.load(self.model_path)
-            if not hasattr(model, 'predict'):
-                raise ValueError("The loaded object is not a valid model with a 'predict' method.")
-            return model
-        except Exception as e:
-            st.error(f"Error loading model: {e}")
-            raise e
+        st.write(f"Loading model from: {model_path}")
+        # Load the model using pickle
+        with open(model_path, "rb") as f:
+            self.model = pickle.load(f)
 
+        if not hasattr(self.model, 'predict'):
+            raise ValueError("The loaded object is not a valid model with a 'predict' method.")
+        
     def predict(self, input_data):
-        model = self.load_model()  # Force reloading model each time
-
         # Ensure the input data is in a DataFrame format
         if isinstance(input_data, dict):
             input_data = pd.DataFrame([input_data])  # Convert dict to DataFrame
-
+        
         # Handle missing values by filling them with zeros
         if input_data.isnull().values.any():
             st.warning("Input data contains missing values. Filling with zeros.")
             input_data = input_data.fillna(0)
-
-        # Ensure correct data types
+        
+        # Ensure all features are numeric
         for col in input_data.columns:
             if not pd.api.types.is_numeric_dtype(input_data[col]):
                 raise ValueError(f"Feature {col} has invalid data type. Expected numeric data.")
-
-        # Debug output
-        st.write("Input to model:", input_data)
-
-        # Make prediction
-        prediction = model.predict(input_data)
-        return prediction
+        
+        # Make prediction with the model
+        return self.model.predict(input_data)
 
 # Initialize model inference with path
 model_inference = ModelInference("rf_model.pkl")
