@@ -9,8 +9,10 @@ class ModelInference:
     def __init__(self, model_path):
         # Load the model
         self.model = joblib.load(model_path)  # Loading the model
-        if not hasattr(self.model, 'predict'):
-            raise ValueError("The loaded object is not a valid model with a 'predict' method.")
+        
+        # Check the model type to ensure it's a RandomForestClassifier
+        if not isinstance(self.model, RandomForestClassifier):
+            raise ValueError("The loaded object is not a RandomForestClassifier.")
         
     def predict(self, input_data):
         # Ensure the input data is in a DataFrame format
